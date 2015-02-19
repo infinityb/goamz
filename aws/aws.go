@@ -108,8 +108,9 @@ type AWSService interface {
 // Implements a Server Query/Post API to easily query AWS services and build
 // errors when desired
 type Service struct {
-	service ServiceInfo
-	signer  Signer
+	service    ServiceInfo
+	signer     Signer
+	httpClient *http.Client
 }
 
 // Create a base set of params for an action
@@ -133,8 +134,15 @@ func NewService(auth Auth, service ServiceInfo) (s *Service, err error) {
 	if err != nil {
 		return
 	}
-	s = &Service{service: service, signer: signer}
+	s = &Service{service: service, signer: signer, httpClient: http.DefaultClient}
 	return
+}
+
+func (s *Service) SetHttpClient(client *http.Client) {
+	if client == nil {
+		client = http.DefaultClient
+	}
+	s.httpClient = client
 }
 
 func (s *Service) Query(method, path string, params map[string]string) (resp *http.Response, err error) {
@@ -148,9 +156,9 @@ func (s *Service) Query(method, path string, params map[string]string) (resp *ht
 	s.signer.Sign(method, path, params)
 	if method == "GET" {
 		u.RawQuery = multimap(params).Encode()
-		resp, err = http.Get(u.String())
+		resp, err = s.httpClient.Get(u.String())
 	} else if method == "POST" {
-		resp, err = http.PostForm(u.String(), multimap(params))
+		resp, err = s.httpClient.PostForm(u.String(), multimap(params))
 	}
 
 	return
