@@ -20,6 +20,10 @@ func New(auth aws.Auth, region aws.Region) (*SNS, error) {
 	return &SNS{auth, region, *service}, err
 }
 
+func NewWithService(auth aws.Auth, region aws.Region, service *aws.Service) (*SNS, error) {
+	return &SNS{auth, region, *service}, nil
+}
+
 func (sns *SNS) query(method string, params map[string]string, responseType interface{}) error {
 	response, err := sns.service.Query(method, "/", params)
 	if err != nil {
